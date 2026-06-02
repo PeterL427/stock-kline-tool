@@ -1,0 +1,5 @@
+cache.db
+all_stocks_raw.csv
+__pycache__/
+*.pyc
+.DS_Store
