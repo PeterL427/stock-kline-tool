@@ -21,10 +21,57 @@ from stock_list import search_stocks, get_name_by_code
 
 # ======================== 页面配置 ========================
 st.set_page_config(
-    page_title="股票 K 线同图对比工具",
+    page_title="股票 K 线对比",
     page_icon="📈",
     layout="wide",
 )
+
+# ======================== 全局样式 ========================
+st.markdown("""
+<style>
+    /* ---- 基础排版 ---- */
+    html { font-size: 15px; }
+    .main .block-container { padding: 1rem 1.5rem !important; max-width: 100%; }
+
+    /* ---- 按钮 ---- */
+    .stButton > button {
+        border-radius: 6px !important;
+        font-weight: 500 !important;
+        padding: 0.4em 0.8em !important;
+        transition: all 0.15s ease !important;
+        border: 1px solid #d0d5dd !important;
+    }
+    .stButton > button:hover { border-color: #999 !important; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .stButton > button[kind="primary"] { border-color: #2563eb !important; background: #2563eb !important; color: #fff !important; }
+
+    /* ---- 搜索按钮 ---- */
+    button[data-testid="baseButton-secondary"] { font-size: 0.9rem !important; }
+
+    /* ---- 侧边栏 ---- */
+    [data-testid="stSidebar"] { background: #fafbfc; border-right: 1px solid #e5e7eb; }
+    [data-testid="stSidebar"] .stMarkdown h2 { font-size: 1.2rem; font-weight: 600; color: #111; }
+    [data-testid="stSidebar"] .stMarkdown h3 { font-size: 0.95rem; font-weight: 600; color: #333; margin-top: 0.5rem; }
+
+    /* ---- 图表容器 ---- */
+    [data-testid="stPlotlyChart"] { border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
+
+    /* ---- 标签条 ---- */
+    .st-key-primary_row button { font-weight: 600 !important; font-size: 0.85rem !important; }
+
+    /* ---- 使用说明 ---- */
+    details summary { color: #666; font-size: 0.85rem; }
+
+    /* ======== 手机端适配 ======== */
+    @media (max-width: 768px) {
+        html { font-size: 14px; }
+        .main .block-container { padding: 0.5rem !important; }
+        .stButton > button { padding: 0.5em 1em !important; font-size: 0.9rem !important; min-height: 36px; }
+        [data-testid="stPlotlyChart"] { padding: 2px; }
+        h2 { font-size: 1rem !important; }
+        h3 { font-size: 0.9rem !important; }
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ======================== Session State 初始化 ========================
 _DEFAULTS = {
@@ -266,7 +313,7 @@ if not st.session_state.stock_codes:
     )
 else:
     # ---- 顶部：已添加股票标签条 ----
-    st.markdown("### 📌 已添加的股票")
+    st.markdown("#### 📌 已添加的股票")
     tag_cols = st.columns(len(st.session_state.stock_codes))
     for i, code in enumerate(st.session_state.stock_codes):
         name = st.session_state.stock_names.get(code, code)
