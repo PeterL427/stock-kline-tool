@@ -155,40 +155,6 @@ def remove_stock(code: str) -> None:
     st.rerun()
 
 
-@st.dialog("添加股票")
-def show_search_dialog():
-    """搜索对话框"""
-    q = st.text_input("输入股票代码、名称或拼音首字母", key="dialog_search", placeholder="如 000001 / 平安 / PA")
-    
-    if q and len(q.strip()) >= 1:
-        results = search_stocks(q.strip(), max_results=5)
-        if results:
-            for code, name, match_type in results:
-                tag = {"code": "🔢", "name": "📝", "pinyin": "🔤"}.get(match_type, "")
-                if st.button(f"{tag} {code} {name}", key=f"sr_{code}", width='stretch'):
-                    add_stock(code)
-                    st.rerun()
-        else:
-            # 也允许直接输入任意6位代码
-            clean = normalise_code(q)
-            if clean and len(clean) == 6:
-                if st.button(f"➕ 直接添加 {clean}", key="sr_direct", width='stretch'):
-                    add_stock(clean)
-                    st.rerun()
-            else:
-                st.caption("未找到匹配的股票")
-
-    # 底部：历史记录（来自 URL 参数）
-    hist_local = _load_history()[:10]
-    if hist_local:
-        st.divider()
-        st.caption("📜 最近使用")
-        cols = st.columns(2)
-        for i, (hcode, hname) in enumerate(hist_local):
-            with cols[i % 2]:
-                if st.button(f"{hname} ({hcode})", key=f"hist_{hcode}", width='stretch'):
-                    add_stock(hcode)
-                    st.rerun()
 
 
 # ======================== 侧边栏：设置 ========================
@@ -198,8 +164,27 @@ with st.sidebar:
 
     # ======== 1. 搜索股票 ========
     st.markdown("### 🔍 搜索股票")
-    if st.button("🔍 打开搜索", width='stretch', type="primary"):
-        show_search_dialog()
+    search_q = st.text_input(
+        "股票代码/名称/拼音",
+        placeholder="如 000001 / 平安 / PA",
+        label_visibility="collapsed",
+        key="sidebar_search",
+    )
+    if search_q and len(search_q.strip()) >= 1:
+        results = search_stocks(search_q.strip(), max_results=5)
+        if results:
+            for code, name, match_type in results:
+                already = code in st.session_state.stock_codes
+                tag = {"code": "🔢", "name": "📝", "pinyin": "🔤"}.get(match_type, "")
+                label = f"✅ {tag} {code} {name}" if already else f"{tag} {code} {name}"
+                if st.button(label, key=f"inline_sr_{code}", disabled=already):
+                    if not already:
+                        add_stock(code)
+        else:
+            clean = normalise_code(search_q)
+            if clean and len(clean) == 6:
+                if st.button(f"➕ 直接添加 {clean}", key=f"inline_sr_direct"):
+                    add_stock(clean)
 
     st.divider()
 
