@@ -47,9 +47,16 @@ for k, v in _DEFAULTS.items():
 def _load_history():
     """从 URL 参数读取历史记录（跨会话持久化）"""
     import json
-    raw = st.query_params.get("hist", "[]")
+    from urllib.parse import unquote
     try:
-        hist = json.loads(raw)
+        raw = st.query_params.get("hist", "")
+        if not raw:
+            raw = st.query_params.get_all("hist")
+            raw = raw[0] if raw else ""
+        if not raw:
+            return []
+        # URL 解码后解析 JSON
+        hist = json.loads(unquote(raw))
         return hist if isinstance(hist, list) else []
     except Exception:
         return []
