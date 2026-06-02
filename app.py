@@ -10,8 +10,6 @@
 """
 
 import streamlit as st
-import streamlit.components.v1 as components
-
 from data_fetcher import (
     fetch_stock_data,
     get_stock_name,
@@ -46,38 +44,21 @@ for k, v in _DEFAULTS.items():
 
 
 # ======================== 辅助函数 ========================
-def _save_to_localstorage(key: str, data: list):
-    """通过 JS 将数据写入浏览器 localStorage"""
+def _load_history():
+    """从 URL 参数读取历史记录（跨会话持久化）"""
     import json
-    js = json.dumps(data, ensure_ascii=False)
-    components.html(
-        f"""
-        <script>
-        localStorage.setItem('{key}', JSON.stringify({js}));
-        </script>
-        """,
-        height=0,
-    )
+    raw = st.query_params.get("hist", "[]")
+    try:
+        hist = json.loads(raw)
+        return hist if isinstance(hist, list) else []
+    except Exception:
+        return []
 
 
-def _load_from_localstorage(key: str, default: list = None):
-    """通过 JS 组件从浏览器 localStorage 读取数据"""
-    import json as _json
-    result = components.html(
-        f"""
-        <script>
-        const val = localStorage.getItem('{key}');
-        window.parent.postMessage({{type: 'streamlit:setComponentValue', value: val || '[]'}}, '*');
-        </script>
-        """,
-        height=0,
-    )
-    if result and result != "[]":
-        try:
-            return _json.loads(result)
-        except Exception:
-            pass
-    return default or []
+def _save_history(hist: list):
+    """写入历史到 URL 参数"""
+    import json
+    st.query_params["hist"] = json.dumps(hist[:20], ensure_ascii=False)
 
 
 def add_stock(code: str) -> None:
@@ -97,11 +78,11 @@ def add_stock(code: str) -> None:
             st.session_state.stock_names[code] = name
             if st.session_state.primary_code is None:
                 st.session_state.primary_code = code
-            # 写入浏览器 localStorage（跨会话持久化）
-            hist = _load_from_localstorage("stock_history", [])
+            # 写入 URL 参数（跨会话持久化）
+            hist = _load_history()
             if not any(h[0] == code for h in hist):
                 hist.insert(0, [code, name])
-                _save_to_localstorage("stock_history", hist[:20])
+                _save_history(hist)
             st.toast(f"✅ {code} {name} 已添加")
             st.rerun()
         else:
@@ -142,8 +123,8 @@ def show_search_dialog():
             else:
                 st.caption("未找到匹配的股票")
 
-    # 底部：历史记录（来自浏览器 localStorage）
-    hist_local = st.session_state.get("history_list", [])[:10]
+    # 底部：历史记录（来自 URL 参数）
+    hist_local = _load_history()[:10]
     if hist_local:
         st.divider()
         st.caption("📜 最近使用")
@@ -169,10 +150,9 @@ with st.sidebar:
 
     # ======== 2. 历史记录 ========
     st.markdown("### 📜 历史记录")
-    # 从浏览器 localStorage 读取（每个用户自己的历史）
+    # 从 URL 参数读取（每个用户自己的历史）
     if "history_list" not in st.session_state:
-        raw = _load_from_localstorage("stock_history", [])
-        st.session_state.history_list = raw if isinstance(raw, list) else []
+        st.session_state.history_list = _load_history()
     history = st.session_state.history_list[:10]
     if history:
         hist_cols = st.columns(2)
